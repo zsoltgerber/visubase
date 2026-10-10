@@ -1,0 +1,7 @@
+[
+  { "munkalapszam": "ML-2026-1050", "tipus": "Tű", "termek": "Injekciós tű 0,8 mm", "cikkszam": "TU-0825", "mennyiseg": 1500, "hatarido": "2026-10-14", "megrendelo": "Minta Medical Zrt." },
+  { "munkalapszam": "ML-2026-1051", "tipus": "Bütyköstengely", "termek": "Bütyköstengely Ø12", "cikkszam": "BT-4410", "mennyiseg": 300, "hatarido": "2026-10-15", "rajzszam": "R-4410-C" },
+  { "munkalapszam": "ML-2026-1052", "tipus": "Tű", "termek": "Varrótű 1,2 mm", "cikkszam": "TU-1230", "mennyiseg": 2000 },
+  { "munkalapszam": "ML-2026-1048", "tipus": "Tű", "termek": "Injekciós tű 0,8 mm", "cikkszam": "TU-0825", "mennyiseg": 600, "hatarido": "2026-10-12" },
+  { "munkalapszam": "ML-2026-1053", "tipus": "Csavar", "termek": "Hatlapfejű csavar M6", "cikkszam": "CS-0606", "mennyiseg": 5000, "hatarido": "2026-10-16" }
+]

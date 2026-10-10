@@ -1,0 +1,867 @@
+<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style></head><body>
+<title>Visubase demó</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: üzemi szoftver — felső sáv (nézetváltó + demó óra), irodában bal oldali menü + tartalom, a gépterminál sötét, érintőre méretezett panel. */
+:root{
+  --bg:#EEF0EE; --surface:#FAFBFA; --surface-2:#E4E8E5; --line:#D3D8D4;
+  --ink:#16212A; --ink-2:#465560; --ink-3:#66737D;
+  --accent:#9C5A0C; --accent-fill:#E59A2F; --on-accent:#16212A;
+  --s1:#2D6AB0; --ref:#66737D; --band:rgba(201,116,26,.16);
+  --ok:#21825A; --ok-soft:#D7EDE2; --idle:#4F6E8E; --idle-soft:#DEE6EE;
+  --err:#B8352A; --err-soft:#F5DCD8; --stop:#A85E12; --stop-soft:#F6E5CF;
+  --setup:#6E55A0; --setup-soft:#E7E0F2; --off:#7E8A93; --off-soft:#E3E6E8;
+  --shadow:0 1px 2px rgba(22,33,42,.06),0 4px 16px rgba(22,33,42,.05);
+  --f-display:'Space Grotesk','IBM Plex Sans',Arial,sans-serif;
+  --f-body:'IBM Plex Sans','Segoe UI',Arial,sans-serif;
+  --f-mono:'IBM Plex Mono',Consolas,monospace;
+  /* gépterminál: szándékosan mindig sötét */
+  --t-bg:#0E151B; --t-panel:#16212A; --t-line:#26343F; --t-ink:#EEF2F4; --t-ink-2:#B5C1C8; --t-ink-3:#8796A0; --t-accent:#EFA63E;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F161C; --surface:#162029; --surface-2:#1E2A34; --line:#2A3843;
+  --ink:#ECF0F2; --ink-2:#B4C0C7; --ink-3:#8E9BA4;
+  --accent:#F0AA48; --accent-fill:#E59A2F; --on-accent:#16212A;
+  --s1:#72A9EA; --ref:#8E9BA4; --band:rgba(240,161,74,.18);
+  --ok:#52C48D; --ok-soft:#173828; --idle:#93AECB; --idle-soft:#1D2C3B;
+  --err:#F27264; --err-soft:#3E1D1A; --stop:#F0A14A; --stop-soft:#3A2814;
+  --setup:#AD92DA; --setup-soft:#2A2340; --off:#8A96A0; --off-soft:#232D35;
+  --shadow:none; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0F161C; --surface:#162029; --surface-2:#1E2A34; --line:#2A3843;
+  --ink:#ECF0F2; --ink-2:#B4C0C7; --ink-3:#8E9BA4;
+  --accent:#F0AA48; --accent-fill:#E59A2F; --on-accent:#16212A;
+  --s1:#72A9EA; --ref:#8E9BA4; --band:rgba(240,161,74,.18);
+  --ok:#52C48D; --ok-soft:#173828; --idle:#93AECB; --idle-soft:#1D2C3B;
+  --err:#F27264; --err-soft:#3E1D1A; --stop:#F0A14A; --stop-soft:#3A2814;
+  --setup:#AD92DA; --setup-soft:#2A2340; --off:#8A96A0; --off-soft:#232D35;
+  --shadow:none; color-scheme:dark;}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+.muted{color:var(--ink-3)}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+
+/* felső sáv */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;padding:10px 20px;background:var(--ink);color:var(--bg)}
+:root .top{background:#16212A;color:#EEF2F4}
+.brand{font-family:var(--f-display);font-weight:700;font-size:20px;color:#EFA63E}
+.demo-tag{font-size:11px;font-weight:600;letter-spacing:.08em;padding:3px 8px;border-radius:999px;border:1px solid #3A4A56;color:#B5C1C8}
+.seg{display:flex;gap:2px;padding:3px;border-radius:10px;background:#0E151B}
+.seg button{border:0;background:transparent;color:#B5C1C8;padding:7px 14px;border-radius:8px;font-weight:500}
+.seg button[aria-pressed="true"]{background:#2A3843;color:#fff}
+.clock{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;color:#B5C1C8}
+.clock b{color:#EEF2F4;font-family:var(--f-mono);font-weight:500}
+.ghost{border:1px solid #3A4A56;background:transparent;color:#EEF2F4;border-radius:8px;padding:6px 10px;font-size:13px}
+
+/* iroda */
+.office{display:grid;grid-template-columns:210px minmax(0,1fr);min-height:calc(100% - 56px)}
+.nav{padding:20px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px;background:var(--surface)}
+.nav a{display:block;padding:10px 12px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-weight:500}
+.nav a[aria-current="page"]{background:var(--surface-2);color:var(--ink)}
+.nav .who{margin-top:auto;padding:12px;font-size:13px;color:var(--ink-3)}
+.nav .who b{display:block;color:var(--ink);font-weight:600}
+.main{padding:24px 28px 48px;min-width:0;display:flex;flex-direction:column;gap:20px}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.head h1{font-size:28px}
+.sub{color:var(--ink-3);font-size:13px;margin-top:4px}
+.back{color:var(--accent);text-decoration:none;font-size:14px;font-weight:500}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);min-width:0}
+.panel h3{font-size:16px;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .l{font-size:13px;color:var(--ink-3)}
+.kpi .v{font-family:var(--f-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .v small{font-family:var(--f-body);font-size:14px;font-weight:500;color:var(--ink-3)}
+.kpi .d{font-size:13px;color:var(--ink-2)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.st-ok{background:var(--ok-soft);color:var(--ok)} .st-idle{background:var(--idle-soft);color:var(--idle)}
+.st-err{background:var(--err-soft);color:var(--err)} .st-stop{background:var(--stop-soft);color:var(--stop)}
+.st-setup{background:var(--setup-soft);color:var(--setup)} .st-off{background:var(--off-soft);color:var(--off)}
+.ml-pending{background:var(--surface-2);color:var(--ink-2)} .ml-futo{background:var(--stop-soft);color:var(--stop)}
+.ml-lezart{background:var(--ok-soft);color:var(--ok)} .ml-megszakitott{background:var(--err-soft);color:var(--err)}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:9px 16px;font-weight:600}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.accent{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* gépkártyák */
+.machines{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.mcard{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow);color:var(--ink)}
+.mcard:hover{border-color:var(--ink-3)}
+.mcard .top2{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.mcard h2{font-size:20px}
+.online{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-3)}
+.online i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.mstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mstats div{display:flex;flex-direction:column}
+.mstats span{font-size:12px;color:var(--ink-3)}
+.mstats b{font-size:18px;font-variant-numeric:tabular-nums;font-weight:600}
+.perfbar{display:flex;flex-direction:column;gap:6px}
+.perfbar .track{position:relative;height:10px;border-radius:5px;background:var(--surface-2)}
+.perfbar .fill{position:absolute;inset:0 auto 0 0;border-radius:5px;background:var(--s1)}
+.perfbar .ref{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.perfbar .lbl{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-2)}
+
+/* táblázatok */
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:500;color:var(--ink-3);font-size:13px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--surface-2)}
+td.r,th.r{text-align:right}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.search{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 12px;min-width:220px}
+
+/* diagramok */
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart text{font-family:var(--f-body);font-size:11px;fill:var(--ink-3)}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:150px;z-index:5}
+.tip .t{color:var(--ink-3);font-size:12px;margin-bottom:4px}
+.tip .r{display:flex;align-items:center;gap:8px}
+.tip .r i{width:14px;height:0;border-top:2px solid var(--s1)}
+.tip .r b{font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink-2);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:0;border-top:2px solid var(--s1)}
+.legend i.dash{border-top:2px dashed var(--ref)}
+.legend i.band{width:12px;height:12px;border:0;background:var(--band)}
+.sband{display:flex;height:18px;border-radius:4px;overflow:hidden;gap:1px;background:var(--surface)}
+.sband div{min-width:1px}
+.bg-ok{background:var(--ok)} .bg-idle{background:var(--idle)} .bg-err{background:var(--err)} .bg-stop{background:var(--stop)} .bg-setup{background:var(--setup)} .bg-off{background:var(--off)}
+.sleg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2);margin-top:8px}
+.sleg span{display:inline-flex;align-items:center;gap:6px}
+.sleg i{width:10px;height:10px;border-radius:2px}
+.flag{background:var(--stop-soft);color:var(--ink);border-radius:10px;padding:10px 12px}
+.flag b{color:var(--stop)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;font-size:14px}
+.kv dt{color:var(--ink-3)} .kv dd{margin:0}
+
+/* modál */
+.scrim{position:fixed;inset:0;background:rgba(10,16,22,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{background:var(--surface);color:var(--ink);border-radius:14px;max-width:760px;width:100%;max-height:calc(100% - 32px);overflow:auto;padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.modal h2{font-size:22px}
+.modal textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:9px;padding:10px;background:var(--bg)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#16212A;color:#EEF2F4;padding:10px 18px;border-radius:10px;z-index:60;font-weight:500;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+
+/* gépterminál */
+.termwrap{padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.termctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;color:var(--ink-2);width:100%;max-width:1280px}
+.termctl select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px}
+.term{width:100%;max-width:1280px;min-height:720px;background:var(--t-bg);color:var(--t-ink);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;color-scheme:dark}
+.term .th{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:14px 22px;background:var(--t-panel);border-bottom:1px solid var(--t-line)}
+.term .th h2{font-size:22px}
+.term .tb{padding:20px 22px;display:flex;flex-direction:column;gap:16px;flex:1}
+.tpanel{background:var(--t-panel);border:1px solid var(--t-line);border-radius:14px;padding:20px}
+.term .muted{color:var(--t-ink-3)}
+.term .eyebrow{color:var(--t-accent)}
+.tbtn{min-height:56px;border-radius:12px;border:1px solid #3A4E5E;background:transparent;color:var(--t-ink);font-size:18px;font-weight:600;padding:0 22px}
+.tbtn.go{background:var(--t-accent);border-color:var(--t-accent);color:#16212A}
+.tbtn.warn{border:2px solid #E57368;color:#F5ABA3}
+.tbtn:disabled{opacity:.45;cursor:not-allowed}
+.tkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tkpi{background:var(--t-panel);border:1px solid var(--t-line);border-radius:12px;padding:14px 16px}
+.tkpi .l{font-size:13px;color:var(--t-ink-3)} .tkpi .v{font-family:var(--f-display);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.tkpi .v small{font-size:14px;color:var(--t-ink-3);font-family:var(--f-body);font-weight:500}
+.trow{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--t-line)}
+.trow .grow{flex:1;min-width:180px}
+.progress{height:14px;border-radius:7px;background:#26343F;overflow:hidden}
+.progress div{height:100%;background:var(--t-accent)}
+.users{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.user{min-height:84px;border-radius:12px;border:1px solid var(--t-line);background:var(--t-panel);color:var(--t-ink);text-align:left;padding:14px 18px}
+.user[aria-pressed="true"]{border:2px solid var(--t-accent)}
+.user b{display:block;font-size:18px} .user span{color:var(--t-ink-3);font-size:14px}
+.tinput{width:100%;min-height:56px;border-radius:12px;border:1px solid #3A4E5E;background:var(--t-bg);color:var(--t-ink);padding:10px 16px;font-size:20px}
+.alert{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:16px 18px;border-radius:12px;background:#3A2A10;color:#F6D9A8}
+.alert.err{background:#3E1D1A;color:#F8C3BC}
+.tmodal{background:var(--t-panel);color:var(--t-ink);border:1px solid var(--t-line);border-radius:16px;max-width:720px;width:100%;padding:26px 28px;display:flex;flex-direction:column;gap:16px;max-height:calc(100% - 32px);overflow:auto}
+.tmodal h2{font-size:26px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.opt{min-height:56px;border-radius:12px;border:1px solid #3A4E5E;background:var(--t-bg);color:var(--t-ink);font-size:17px;font-weight:500;padding:8px 14px;text-align:left}
+.opt[aria-pressed="true"]{border:2px solid var(--t-accent);background:#2A2412}
+.tmodal textarea{width:100%;min-height:96px;border-radius:12px;border:1px solid #3A4E5E;background:var(--t-bg);color:var(--t-ink);padding:12px 14px;font-size:17px}
+.steps{display:flex;gap:6px} .steps i{width:36px;height:6px;border-radius:3px;background:#2E4050} .steps i.on{background:var(--t-accent)}
+.demo-btn{border:1px dashed var(--ink-3);background:transparent;border-radius:8px;padding:6px 10px;font-size:13px;color:var(--ink-2)}
+
+@media (max-width:760px){
+  .office{grid-template-columns:1fr}
+  .nav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px}
+  .nav a{white-space:nowrap}
+  .nav .who{display:none}
+  .main{padding:18px 16px 40px}
+  .grid2{grid-template-columns:1fr}
+  .top{padding:10px 16px}
+  .clock{margin-left:0}
+  .termwrap{padding:12px 16px}
+  .term{min-height:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app"></div>
+<div id="modal"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+'use strict';
+/* ====================== segédek ====================== */
+const BASE = Date.UTC(2026, 9, 1); // t = perc 2026-10-01 00:00-tól
+const pad = n => String(n).padStart(2, '0');
+const fmtT = t => pad(Math.floor((t % 1440) / 60)) + ':' + pad(t % 60);
+const HONAP = ['jan.','febr.','márc.','ápr.','máj.','jún.','júl.','aug.','szept.','okt.','nov.','dec.'];
+const fmtD = t => { const d = new Date(BASE + Math.floor(t / 1440) * 864e5); return HONAP[d.getUTCMonth()] + ' ' + d.getUTCDate() + '.'; };
+const fmtDT = t => fmtD(t) + ' ' + fmtT(t);
+const fmtDur = m => m < 60 ? m + ' perc' : Math.floor(m / 60) + ' ó ' + (m % 60) + ' p';
+const nf = (n, d = 0) => Number(n).toLocaleString('hu-HU', { minimumFractionDigits: d, maximumFractionDigits: d });
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const parseNum = s => { const v = parseFloat(String(s).replace(/\s/g, '').replace(',', '.')); return isNaN(v) ? null : v; };
+
+const STATES = { 0: ['Kikapcsolva', 'off'], 1: ['Készenlét', 'idle'], 2: ['Üzemel', 'ok'], 3: ['Hiba', 'err'], 4: ['Beállítás', 'setup'], 5: ['Leállítva', 'stop'] };
+const stPill = s => `<span class="pill st-${STATES[s][1]}">${STATES[s][0]}</span>`;
+const ML_ST = { pending: 'Pending', futo: 'Futó', lezart: 'Lezárt', megszakitott: 'Megszakított' };
+const mlPill = s => `<span class="pill ml-${s}">${ML_ST[s]}</span>`;
+
+/* ====================== törzsadatok ====================== */
+const USERS = [
+  { id: 'u1', nev: 'Kovács Péter', szerep: 'gépkezelő' },
+  { id: 'u4', nev: 'Szabó István', szerep: 'gépkezelő' },
+  { id: 'u2', nev: 'Nagy Anna', szerep: 'vezető' },
+  { id: 'u3', nev: 'Tóth Gábor', szerep: 'admin' },
+];
+const TEXTLISTS = {
+  allas: ['Anyaghiány', 'Szerszámcsere', 'Beállítás / átállás', 'Karbantartás', 'Minőségellenőrzés', 'Egyéb'],
+  selejt: ['Méreteltérés', 'Felületi hiba', 'Sorja', 'Nincs selejt'],
+  csomag: ['Doboz', 'Tálca', 'Rakodólap'],
+  hibakod: { 'E-1012': 'Hűtőfolyadék szint alacsony', 'E-2104': 'Főorsó túlterhelés', 'E-3107': 'Rúdadagoló: anyag elfogyott' },
+};
+const FORMS = {
+  'bt-kezdo': { nev: 'Bütyköstengely – kezdő', q: [
+    { s: 'Szerszámbemérés megtörtént?', t: 'bool' },
+    { s: 'Rúdanyag adagszáma', t: 'text' },
+    { s: 'Első darab: csapátmérő Ø (mm)', t: 'num', min: 11.98, max: 12.02 } ] },
+  'bt-bef': { nev: 'Bütyköstengely – befejező', q: [
+    { s: 'Utolsó darab: csapátmérő Ø (mm)', t: 'num', min: 11.98, max: 12.02 },
+    { s: 'Felület rendben?', t: 'bool' },
+    { s: 'Selejt fő oka', t: 'list', l: 'selejt' } ] },
+  'tu-kezdo': { nev: 'Tű – kezdő', q: [
+    { s: 'Szerszámbemérés megtörtént?', t: 'bool' },
+    { s: 'Első darab: hegyszög (°)', t: 'num', min: 29.5, max: 30.5 },
+    { s: 'Rúdanyag adagszáma', t: 'text' } ] },
+  'tu-bef': { nev: 'Tű – befejező', q: [
+    { s: 'Utolsó darab: teljes hossz (mm)', t: 'num', min: 24.95, max: 25.05 },
+    { s: 'Csomagolás módja', t: 'list', l: 'csomag' },
+    { s: 'Megjegyzés a műszaknak', t: 'text' } ] },
+};
+const RULES = {
+  'Bütyköstengely': { gepek: ['m1'], kezdo: 'bt-kezdo', bef: 'bt-bef' },
+  'Tű': { gepek: ['m2'], kezdo: 'tu-kezdo', bef: 'tu-bef' },
+};
+
+const M = [
+  { id: 'm1', nev: 'Citizen L20 – Camshaft', modell: 'Citizen L20', ip: '192.168.20.11', topic: 'citizen-l20-camshaft', korlat: 3, elvart: 42, kwRun: 5.4, kwIdle: 1.1, rejectRate: .012 },
+  { id: 'm2', nev: 'Citizen L20 – Needle', modell: 'Citizen L20', ip: '192.168.20.12', topic: 'citizen-l20-needle', korlat: 3, elvart: 120, kwRun: 3.9, kwIdle: 0.9, rejectRate: .008 },
+];
+const machine = id => M.find(m => m.id === id);
+M.forEach(m => Object.assign(m, { state: 1, code: null, hist: [], log: [], energyTotal: 0, run: null, override: null, cur: null, acc: 0 }));
+
+function point(m, st, r) {
+  let perf = 0, kw;
+  if (st === 2) { perf = m.elvart * (0.85 + 0.13 * r()); if (r() < .04) perf *= .7; kw = m.kwRun * (0.9 + 0.2 * r()); }
+  else if (st === 4) kw = m.kwIdle * 1.8 * (0.9 + 0.2 * r());
+  else kw = m.kwIdle * (0.85 + 0.3 * r());
+  const amp = kw * 1.68 * (0.97 + 0.06 * r());
+  return { state: st, perf, kw, amp };
+}
+
+/* lefutás generálása (múltbeli munkalapokhoz) */
+function simRun(m, t0, o) {
+  const r = rng(o.seed); const series = []; let good = 0, reject = 0, energy = 0, acc = 0;
+  for (let i = 0; i < 2000; i++) {
+    const d = (o.downs || []).find(d => i >= d.at && i < d.at + d.dur);
+    const p = point(m, d ? d.state : 2, r); p.t = t0 + i; series.push(p); energy += p.kw / 60;
+    if (p.state === 2) { acc += p.perf / 60; while (acc >= 1) { acc--; if (r() < m.rejectRate) reject++; else good++; } }
+    if (o.terv && good >= o.terv) break;
+    if (o.maxMin && i + 1 >= o.maxMin) break;
+  }
+  const downtimes = (o.downs || []).filter(d => d.dur >= m.korlat).map(d => ({ t0: t0 + d.at, t1: t0 + d.at + d.dur, dur: d.dur, state: d.state, code: d.code || null, ok: d.ok, megj: d.megj || '', user: d.user }));
+  const shortStops = (o.downs || []).filter(d => d.dur < m.korlat).length;
+  return { series, good, reject, energy, downtimes, shortStops, acc };
+}
+
+/* ====================== munkalapok ====================== */
+const ML = [];
+function mkMl(o) { const ml = Object.assign({ forras: 'JSON-import', extra: {}, series: [], good: 0, reject: 0, energy: 0, downtimes: [], shortStops: 0, urlap: { kezdo: [], bef: [] }, acc: 0 }, o); ML.push(ml); return ml; }
+const mlById = id => ML.find(x => x.id === id);
+const fq = (form, i) => FORMS[form].q[i];
+const ans = (form, i, val, extra = {}) => Object.assign({ s: fq(form, i).s, t: fq(form, i).t, min: fq(form, i).min, max: fq(form, i).max, val }, extra);
+
+const NOW0 = 9 * 1440 + 8 * 60; // okt. 10. 08:00
+const S = { now: NOW0, running: true, mode: 'iroda', view: 'gepek', sel: null, mlFilter: 'mind', mlSearch: '', term: { gepId: 'm2', user: null, pick: 'u1' }, hover: null, wiz: null, importRows: null, reasonFor: null };
+
+(function seed() {
+  const m1 = machine('m1'), m2 = machine('m2');
+  // lezárt, teljes riporttal
+  const t41 = 8 * 1440 + 360;
+  const r41 = simRun(m1, t41, { seed: 41, terv: 320, downs: [
+    { at: 95, dur: 18, state: 5, ok: 'Anyaghiány', megj: 'Rúdanyag a raktárból késve érkezett', user: 'Kovács Péter' },
+    { at: 210, dur: 2, state: 5 },
+    { at: 262, dur: 11, state: 3, code: 'E-2104', ok: 'Szerszámcsere', megj: 'Kopott beszúrókés cserélve', user: 'Kovács Péter' },
+    { at: 401, dur: 7, state: 4, ok: 'Beállítás / átállás', user: 'Szabó István' } ] });
+  mkMl({ id: 'ML-2026-1041', tipus: 'Bütyköstengely', termek: 'Bütyköstengely Ø12', cikkszam: 'BT-4410', terv: 320, hatarido: '2026-10-09', status: 'lezart', gepId: 'm1', gepek: ['m1'],
+    extra: { megrendelo: 'Minta Hajtás Kft.', rajzszam: 'R-4410-C' }, importalva: t41 - 600,
+    start: { t: t41, user: 'Kovács Péter' }, end: { t: r41.series[r41.series.length - 1].t + 1, user: 'Szabó István' },
+    series: r41.series, good: r41.good, reject: r41.reject, energy: r41.energy, downtimes: r41.downtimes, shortStops: r41.shortStops,
+    urlap: { kezdo: [ans('bt-kezdo', 0, 'Igen'), ans('bt-kezdo', 1, 'H-24-0915'), ans('bt-kezdo', 2, 12.01)],
+      bef: [ans('bt-bef', 0, 12.03, { out: true, indok: 'Szerszámkopás a tétel végén, a darabok ráhagyással megfelelnek, minőségügy jóváhagyta.' }), ans('bt-bef', 1, 'Igen'), ans('bt-bef', 2, 'Méreteltérés')] } });
+  r41.downtimes.forEach(d => m1.log.push(Object.assign({ ml: 'ML-2026-1041' }, d)));
+
+  const t38 = 8 * 1440 + 15 * 60;
+  const r38 = simRun(m2, t38, { seed: 38, terv: 900, downs: [{ at: 180, dur: 9, state: 5, ok: 'Anyaghiány', user: 'Szabó István' }, { at: 300, dur: 1, state: 5 }] });
+  mkMl({ id: 'ML-2026-1038', tipus: 'Tű', termek: 'Injekciós tű 0,8 mm', cikkszam: 'TU-0825', terv: 900, hatarido: '2026-10-09', status: 'lezart', gepId: 'm2', gepek: ['m2'],
+    extra: { megrendelo: 'Minta Medical Zrt.' }, importalva: t38 - 900,
+    start: { t: t38, user: 'Szabó István' }, end: { t: r38.series[r38.series.length - 1].t + 1, user: 'Szabó István' },
+    series: r38.series, good: r38.good, reject: r38.reject, energy: r38.energy, downtimes: r38.downtimes, shortStops: r38.shortStops,
+    urlap: { kezdo: [ans('tu-kezdo', 0, 'Igen'), ans('tu-kezdo', 1, 30.1), ans('tu-kezdo', 2, 'H-24-0877')], bef: [ans('tu-bef', 0, 25.01), ans('tu-bef', 1, 'Tálca'), ans('tu-bef', 2, 'Nincs megjegyzés.')] } });
+  r38.downtimes.forEach(d => m2.log.push(Object.assign({ ml: 'ML-2026-1038' }, d)));
+
+  const t36 = 7 * 1440 + 13 * 60;
+  const r36 = simRun(m2, t36, { seed: 36, maxMin: 145, downs: [{ at: 118, dur: 27, state: 3, code: 'E-3107', ok: 'Anyaghiány', user: 'Kovács Péter' }] });
+  mkMl({ id: 'ML-2026-1036', tipus: 'Tű', termek: 'Varrótű 1,2 mm', cikkszam: 'TU-1230', terv: 800, hatarido: '2026-10-08', status: 'megszakitott', gepId: 'm2', gepek: ['m2'], importalva: t36 - 300,
+    start: { t: t36, user: 'Kovács Péter' }, end: { t: t36 + 145, user: 'Kovács Péter' }, megszakitas: 'Rúdanyag minőségi hiba, a tétel visszatartva, új munkalap készül.',
+    series: r36.series, good: r36.good, reject: r36.reject, energy: r36.energy, downtimes: r36.downtimes, shortStops: r36.shortStops,
+    urlap: { kezdo: [ans('tu-kezdo', 0, 'Igen'), ans('tu-kezdo', 1, 30.0), ans('tu-kezdo', 2, 'H-24-0861')], bef: [] } });
+  r36.downtimes.forEach(d => m2.log.push(Object.assign({ ml: 'ML-2026-1036' }, d)));
+
+  // ma: m1 előzmény + futó munkalap
+  const r0 = rng(7);
+  for (let t = NOW0 - 150; t < NOW0 - 90; t++) { const st = t >= NOW0 - 115 ? 4 : 1; const p = point(m1, st, r0); p.t = t; m1.hist.push(p); }
+  const t47 = NOW0 - 90;
+  const r47 = simRun(m1, t47, { seed: 47, maxMin: 90, downs: [{ at: 42, dur: 6, state: 3, code: 'E-1012', ok: 'Karbantartás', megj: 'Hűtőfolyadék utántöltve', user: 'Kovács Péter' }] });
+  const ml47 = mkMl({ id: 'ML-2026-1047', tipus: 'Bütyköstengely', termek: 'Bütyköstengely Ø12 – B változat', cikkszam: 'BT-4420', terv: 400, hatarido: '2026-10-10', status: 'futo', gepId: 'm1', gepek: ['m1'], importalva: t47 - 200,
+    extra: { megrendelo: 'Minta Hajtás Kft.' }, start: { t: t47, user: 'Kovács Péter' },
+    series: r47.series, good: r47.good, reject: r47.reject, energy: r47.energy, downtimes: r47.downtimes, shortStops: r47.shortStops, acc: r47.acc,
+    urlap: { kezdo: [ans('bt-kezdo', 0, 'Igen'), ans('bt-kezdo', 1, 'H-24-1002'), ans('bt-kezdo', 2, 12.0)], bef: [] } });
+  m1.hist.push(...r47.series); m1.run = ml47.id; m1.state = 2;
+  r47.downtimes.forEach(d => m1.log.push(Object.assign({ ml: ml47.id }, d)));
+
+  // m2: készenlét, átállás 07:20–07:45
+  const r2 = rng(9);
+  for (let t = NOW0 - 150; t < NOW0; t++) { const st = (t >= NOW0 - 40 && t < NOW0 - 15) ? 4 : 1; const p = point(m2, st, r2); p.t = t; m2.hist.push(p); }
+  m2.log.push({ t0: 8 * 1440 + 21 * 60 + 40, t1: 8 * 1440 + 21 * 60 + 44, dur: 4, state: 3, code: 'E-1012', ok: 'Karbantartás', user: 'Szabó István', ml: null });
+
+  M.forEach(m => { m.energyToday = m.hist.filter(p => p.t >= NOW0 - 480).reduce((a, p) => a + p.kw / 60, 0); });
+
+  mkMl({ id: 'ML-2026-1045', tipus: 'Tű', termek: 'Varrótű 1,2 mm', cikkszam: 'TU-1230', terv: 800, hatarido: '2026-10-11', status: 'pending', gepek: ['m2'], importalva: NOW0 - 1300 });
+  mkMl({ id: 'ML-2026-1048', tipus: 'Tű', termek: 'Injekciós tű 0,8 mm', cikkszam: 'TU-0825', terv: 600, hatarido: '2026-10-12', status: 'pending', gepek: ['m2'], importalva: NOW0 - 120, extra: { megrendelo: 'Minta Medical Zrt.' } });
+  mkMl({ id: 'ML-2026-1049', tipus: 'Bütyköstengely', termek: 'Bütyköstengely Ø12', cikkszam: 'BT-4410', terv: 250, hatarido: '2026-10-13', status: 'pending', gepek: ['m1'], importalva: NOW0 - 120 });
+})();
+
+/* ====================== szimuláció ====================== */
+const liveR = rng(2026);
+function tick() {
+  S.now++;
+  for (const m of M) {
+    let st;
+    if (m.override && S.now < m.override.until) st = m.override.state;
+    else { if (m.override) { m.override = null; m.code = null; } st = m.run ? 2 : 1; }
+    // m1: időnként magától leáll (élő dashboardhoz)
+    if (m.id === 'm1' && !m.override && m.run && liveR() < .012) { m.override = { state: 5, until: S.now + 4 + Math.floor(liveR() * 3) }; st = 5; }
+    m.state = st; m.code = st === 3 ? (m.override?.code || null) : null;
+    const p = point(m, st, liveR); p.t = S.now; m.hist.push(p); if (m.hist.length > 240) m.hist.shift();
+    m.energyToday += p.kw / 60;
+    const ml = m.run && mlById(m.run);
+    if (ml) {
+      ml.series.push(p); ml.energy += p.kw / 60;
+      if (st === 2) { ml.acc += p.perf / 60; while (ml.acc >= 1) { ml.acc--; if (liveR() < m.rejectRate) ml.reject++; else ml.good++; } }
+      // állásidő-követés
+      if (st !== 2) {
+        if (!m.cur) m.cur = { t0: S.now, state: st, code: m.code, dur: 0, ok: null, user: null, ml: ml.id };
+        m.cur.dur++;
+        if (m.cur.dur === m.korlat) {
+          ml.downtimes.push(m.cur); m.log.push(m.cur);
+          if (S.term.gepId === m.id && S.term.user) { S.reasonFor = { m: m.id, rec: m.cur }; S.reasonSel = null; S.reasonMegj = ''; if (!S.wiz) openReason(); }
+          else { m.cur.ok = TEXTLISTS.allas[Math.floor(liveR() * 3)]; m.cur.user = 'Kovács Péter'; }
+        }
+      } else if (m.cur) {
+        m.cur.t1 = S.now; if (m.cur.dur < m.korlat) ml.shortStops++; m.cur = null;
+      }
+    }
+  }
+  liveRefresh();
+}
+setInterval(() => { if (S.running) tick(); }, 1000);
+
+/* ====================== diagram ====================== */
+function niceStep(v) { if (v <= 0) return 1; const e = Math.pow(10, Math.floor(Math.log10(v))); const f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; }
+function niceMax(v) { if (v <= 0) return 1; const e = Math.pow(10, Math.floor(Math.log10(v))); const f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; }
+const CHARTS = {};
+function lineChart(el, cfg) {
+  if (!el) return;
+  CHARTS[cfg.id] = { el, cfg };
+  const W = Math.max(280, el.clientWidth), H = cfg.h || 210, m = { l: 46, r: 14, t: 12, b: 26 };
+  const xs = cfg.xs, n = xs.length; if (n < 2) { el.innerHTML = '<p class="muted">Még nincs elég adat.</p>'; return; }
+  const x0 = xs[0], x1 = xs[n - 1];
+  let ymax = cfg.yMax || 0; cfg.series.forEach(s => s.vals.forEach(v => { if (v != null && v > ymax) ymax = v; })); if (cfg.ref) ymax = Math.max(ymax, cfg.ref.v * 1.15);
+  const ystep = niceStep(ymax / 4); ymax = Math.max(ystep, Math.ceil(ymax / ystep) * ystep); const nt = Math.round(ymax / ystep);
+  const X = t => m.l + (t - x0) / (x1 - x0 || 1) * (W - m.l - m.r), Y = v => H - m.b - v / ymax * (H - m.t - m.b);
+  let g = '';
+  (cfg.bands || []).forEach(b => { const a = X(Math.max(b.t0, x0)), z = X(Math.min(b.t1, x1)); if (z > a) g += `<rect x="${a.toFixed(1)}" y="${m.t}" width="${(z - a).toFixed(1)}" height="${H - m.t - m.b}" style="fill:var(--band)"/>`; });
+  for (let i = 0; i <= nt; i++) { const v = ystep * i, y = Y(v); g += `<line x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}" style="stroke:var(--line)" stroke-width="1"/><text x="${m.l - 6}" y="${y + 4}" text-anchor="end">${nf(v, ystep < 1 ? 1 : 0)}</text>`; }
+  const span = x1 - x0, step = span > 600 ? 120 : span > 240 ? 60 : span > 90 ? 30 : span > 40 ? 10 : 5;
+  for (let t = Math.ceil(x0 / step) * step; t <= x1; t += step) g += `<text x="${X(t)}" y="${H - 6}" text-anchor="middle">${fmtT(t)}</text>`;
+  if (cfg.ref) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(cfg.ref.v)}" y2="${Y(cfg.ref.v)}" style="stroke:var(--ref)" stroke-width="1.5" stroke-dasharray="6 5"/>`;
+  cfg.series.forEach(s => {
+    let d = '', pen = false, area = '';
+    s.vals.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? 'L' : 'M') + X(xs[i]).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; });
+    if (s.area) { area = `<path d="${d} L${X(xs[n - 1]).toFixed(1)} ${Y(0)} L${X(xs[0]).toFixed(1)} ${Y(0)} Z" style="fill:var(--s1);opacity:.10"/>`; }
+    g += area + `<path d="${d}" fill="none" style="stroke:var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const lv = s.vals[n - 1]; if (lv != null) g += `<circle cx="${X(xs[n - 1])}" cy="${Y(lv)}" r="3.5" style="fill:var(--s1);stroke:var(--surface)" stroke-width="2"/>`;
+  });
+  g += `<line class="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" style="stroke:var(--ink-3)" stroke-width="1" visibility="hidden"/>`;
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${esc(cfg.label)}">${g}<rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" class="hit"/></svg><div class="tip" hidden></div>`;
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip'), cross = el.querySelector('.cross');
+  function show(px) {
+    const t = x0 + (px - m.l) / (W - m.l - m.r) * (x1 - x0); let i = 0, best = 1e9;
+    xs.forEach((x, k) => { const d = Math.abs(x - t); if (d < best) { best = d; i = k; } });
+    const cx = X(xs[i]); cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility', 'visible');
+    tip.textContent = ''; const h = document.createElement('div'); h.className = 't'; h.textContent = (cfg.xFmt || fmtT)(xs[i]); tip.appendChild(h);
+    cfg.series.forEach(s => { const r = document.createElement('div'); r.className = 'r'; const k = document.createElement('i'); const b = document.createElement('b'); b.textContent = s.vals[i] == null ? '–' : nf(s.vals[i], s.dec ?? 1) + ' ' + (cfg.unit || ''); const l = document.createElement('span'); l.className = 'muted'; l.textContent = s.name; r.append(k, b, l); tip.appendChild(r); });
+    if (cfg.ref) { const r = document.createElement('div'); r.className = 'r muted'; r.textContent = cfg.ref.name + ': ' + nf(cfg.ref.v, 0) + ' ' + (cfg.unit || ''); tip.appendChild(r); }
+    if (cfg.bandAt) { const b = cfg.bandAt(xs[i]); if (b) { const r = document.createElement('div'); r.className = 'r'; r.style.color = 'var(--stop)'; r.textContent = b; tip.appendChild(r); } }
+    tip.hidden = false; const tw = tip.offsetWidth; let left = cx * el.clientWidth / W + 12; if (left + tw > el.clientWidth) left = cx * el.clientWidth / W - tw - 12; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = '4px';
+  }
+  svg.addEventListener('pointermove', e => { const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) * W / r.width; S.hover = { id: cfg.id, px }; show(px); });
+  svg.addEventListener('pointerleave', () => { S.hover = null; tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+  if (S.hover && S.hover.id === cfg.id) show(S.hover.px);
+}
+function rolling(vals, w) { return vals.map((_, i) => { const a = vals.slice(Math.max(0, i - w + 1), i + 1); return a.reduce((s, v) => s + v, 0) / a.length; }); }
+function bucket(series, size, f) { const out = []; for (let i = 0; i < series.length; i += size) { const ch = series.slice(i, i + size); out.push({ t: ch[0].t, v: f(ch) }); } return out; }
+function stateBand(pts) {
+  if (!pts.length) return '';
+  const segs = []; pts.forEach(p => { const l = segs[segs.length - 1]; if (l && l.s === p.state) l.n++; else segs.push({ s: p.state, n: 1, t: p.t }); });
+  const present = [...new Set(segs.map(s => s.s))];
+  return `<div class="sband" role="img" aria-label="Üzemállapot idővonal">${segs.map(s => `<div class="bg-${STATES[s.s][1]}" style="flex:${s.n}" title="${fmtT(s.t)} · ${STATES[s.s][0]} · ${s.n} perc"></div>`).join('')}</div>
+  <div class="row muted" style="justify-content:space-between;font-size:12px;margin-top:4px"><span>${fmtT(pts[0].t)}</span><span>${fmtT(pts[pts.length - 1].t + 1)}</span></div>
+  <div class="sleg">${present.map(s => `<span><i class="bg-${STATES[s][1]}"></i>${STATES[s][0]}</span>`).join('')}</div>`;
+}
+
+/* ====================== számítások ====================== */
+function mlStats(ml) {
+  const m = machine(ml.gepId), s = ml.series, perc = s.length;
+  const run = s.filter(p => p.state === 2).length;
+  const down = ml.downtimes.reduce((a, d) => a + (d.dur || 0), 0);
+  const db = ml.good + ml.reject;
+  return { perc, run, down, db, perfRun: run ? db / (run / 60) : 0, perfAll: perc ? db / (perc / 60) : 0, energy: ml.energy, kwhDb: ml.good ? ml.energy / ml.good : 0, avgKw: perc ? ml.energy / (perc / 60) : 0, elvart: m.elvart, selejt: db ? ml.reject / db * 100 : 0 };
+}
+const curPerf = m => { const h = m.hist.slice(-10); return h.length ? h.reduce((a, p) => a + p.perf, 0) / h.length : 0; };
+
+/* ====================== nézetek ====================== */
+const app = document.getElementById('app');
+function topbar() {
+  return `<header class="top">
+    <span class="brand">Visubase</span><span class="demo-tag">DEMÓ · MINTAADATOK</span>
+    <div class="seg" role="group" aria-label="Nézet">
+      <button data-a="mode" data-v="iroda" aria-pressed="${S.mode === 'iroda'}">Iroda</button>
+      <button data-a="mode" data-v="terminal" aria-pressed="${S.mode === 'terminal'}">Gépterminál</button>
+    </div>
+    <div class="clock"><span>Demó idő</span><b id="clk">${fmtDT(S.now)}</b><span class="muted" style="color:#8796A0">1 mp = 1 perc</span>
+      <button class="ghost" data-a="pause">${S.running ? 'Szünet' : 'Folytatás'}</button></div>
+  </header>`;
+}
+function render() {
+  if (S.mode === 'terminal') { app.innerHTML = topbar() + renderTerminal(); afterTerminal(); return; }
+  const nav = [['gepek', 'Gépek'], ['munkalapok', 'Munkalapok']];
+  const cur = S.view.startsWith('gep') ? 'gepek' : 'munkalapok';
+  app.innerHTML = topbar() + `<div class="office"><nav class="nav" aria-label="Fő menü">${nav.map(([k, l]) => `<a href="#" data-a="go" data-v="${k}" ${cur === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}
+    <div class="who"><b>Nagy Anna</b>vezető</div></nav><main class="main" id="main">${renderMain()}</main></div>`;
+  afterMain();
+}
+function renderMain() {
+  if (S.view === 'gepek') return viewGepek();
+  if (S.view === 'gep') return viewGep(machine(S.sel));
+  if (S.view === 'munkalapok') return viewMunkalapok();
+  if (S.view === 'ml') return viewMl(mlById(S.sel));
+  return '';
+}
+function afterMain() {
+  if (S.view === 'gep') drawGepCharts(machine(S.sel));
+  if (S.view === 'ml') drawMlCharts(mlById(S.sel));
+}
+function liveRefresh() {
+  const c = document.getElementById('clk'); if (c) c.textContent = fmtDT(S.now);
+  if (document.querySelector('#modal .scrim') && S.mode === 'iroda') return;
+  if (S.mode === 'terminal') { if (!S.term.user) return; const tb = document.getElementById('termbody'); if (tb) { tb.outerHTML = termBody(); afterTerminal(); } return; }
+  const live = S.view === 'gepek' || S.view === 'gep' || (S.view === 'ml' && mlById(S.sel)?.status === 'futo');
+  if (!live) return;
+  const main = document.getElementById('main'); if (!main) return;
+  main.innerHTML = renderMain(); afterMain();
+}
+
+/* --- Gépek --- */
+function viewGepek() {
+  return `<div class="head"><div><h1>Gépek</h1><div class="sub">2 gép · mindkettő online · élő adatok MQTT-n</div></div></div>
+  <div class="machines">${M.map(m => {
+    const p = curPerf(m), ml = m.run && mlById(m.run), pct = Math.min(130, p / m.elvart * 100);
+    return `<button class="mcard" data-a="gep" data-v="${m.id}">
+      <div class="top2"><div><div class="eyebrow">${m.modell}</div><h2>${m.nev}</h2><div class="sub mono">${m.ip} · ${m.topic}</div></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="online"><i></i>Online</span>${stPill(m.state)}</div></div>
+      <div class="perfbar"><div class="lbl"><span>Gyártási teljesítmény (10 perc átlag)</span><span class="num"><b>${nf(p)}</b> / ${m.elvart} db/óra elvárt</span></div>
+        <div class="track"><div class="fill" style="width:${(pct / 130 * 100).toFixed(1)}%"></div><div class="ref" style="left:${(100 / 130 * 100).toFixed(1)}%" title="Elvárt"></div></div></div>
+      <div class="mstats"><div><span>Áramfelvétel</span><b>${nf(m.hist.at(-1).amp, 1)} A</b></div><div><span>Teljesítményfelvétel</span><b>${nf(m.hist.at(-1).kw, 1)} kW</b></div><div><span>Fogyasztás ma</span><b>${nf(m.energyToday, 1)} kWh</b></div></div>
+      <div class="sub">${ml ? `Futó munkalap: <b style="color:var(--ink)">${ml.id}</b> · ${nf(ml.good)} / ${nf(ml.terv)} db` : 'Nincs futó munkalap · ' + ML.filter(x => x.status === 'pending' && x.gepek.includes(m.id)).length + ' pending'}</div>
+    </button>`; }).join('')}</div>`;
+}
+function viewGep(m) {
+  const p = curPerf(m), last = m.hist.at(-1), ml = m.run && mlById(m.run);
+  const since = (() => { let i = m.hist.length - 1; while (i > 0 && m.hist[i - 1].state === m.state) i--; return m.hist[i].t; })();
+  const pend = ML.filter(x => x.status === 'pending' && x.gepek.includes(m.id));
+  const log = [...m.log].sort((a, b) => b.t0 - a.t0).slice(0, 8);
+  return `<a href="#" class="back" data-a="go" data-v="gepek">← Gépek</a>
+  <div class="head"><div><div class="eyebrow">${m.modell}</div><h1>${m.nev}</h1><div class="sub"><span class="mono">${m.ip} · topic: ${m.topic}</span> · állásidő-korlát: ${m.korlat * 60} s · elvárt teljesítmény: ${m.elvart} db/óra</div></div>
+  <div class="row"><span class="online"><i></i>Online</span>${stPill(m.state)}</div></div>
+  <div class="kpis">
+    <div class="kpi"><span class="l">Üzemállapot</span><span class="v" style="font-size:22px">${STATES[m.state][0]}</span><span class="d">${fmtT(since)} óta${m.state === 3 && m.code ? ' · ' + m.code : ''}</span></div>
+    <div class="kpi"><span class="l">Gyártási teljesítmény</span><span class="v">${nf(p)} <small>db/óra</small></span><span class="d">${nf(p / m.elvart * 100)}% az elvárt ${m.elvart}-hez</span></div>
+    <div class="kpi"><span class="l">Áramfelvétel</span><span class="v">${nf(last.amp, 1)} <small>A</small></span><span class="d">pillanatnyi</span></div>
+    <div class="kpi"><span class="l">Teljesítményfelvétel</span><span class="v">${nf(last.kw, 1)} <small>kW</small></span><span class="d">pillanatnyi</span></div>
+    <div class="kpi"><span class="l">Fogyasztás ma</span><span class="v">${nf(m.energyToday, 1)} <small>kWh</small></span><span class="d">00:00 óta</span></div>
+  </div>
+  <div class="panel"><h3>Gyártási teljesítmény – utolsó 2 óra</h3><div class="chart" id="c-perf"></div>
+    <div class="legend"><span><i></i>Tényleges (5 perces átlag)</span><span><i class="dash"></i>Elvárt (${m.elvart} db/óra)</span></div>
+    <div style="margin-top:14px">${stateBand(m.hist.slice(-120))}</div></div>
+  <div class="grid2">
+    <div class="panel"><h3>Áramfelvétel – utolsó 2 óra</h3><div class="chart" id="c-amp"></div></div>
+    <div class="panel"><h3>Munkalapok ezen a gépen</h3>
+      ${ml ? `<div class="row" style="justify-content:space-between"><div>${mlPill('futo')} <a href="#" data-a="ml" data-v="${ml.id}" class="back">${ml.id}</a> · ${esc(ml.termek)}</div><span class="num">${nf(ml.good)} / ${nf(ml.terv)} db</span></div>
+        <div class="perfbar" style="margin:10px 0 14px"><div class="track"><div class="fill" style="width:${Math.min(100, ml.good / ml.terv * 100).toFixed(1)}%;background:var(--accent-fill)"></div></div></div>` : '<p class="muted">Nincs futó munkalap.</p>'}
+      <div class="tablewrap"><table><thead><tr><th>Pending</th><th>Termék</th><th class="r">Mennyiség</th><th>Határidő</th></tr></thead><tbody>
+      ${pend.map(x => `<tr class="click" data-a="ml" data-v="${x.id}"><td>${x.id}</td><td>${esc(x.termek)}</td><td class="r num">${nf(x.terv)} db</td><td>${x.hatarido}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nincs pending munkalap.</td></tr>'}
+      </tbody></table></div></div>
+  </div>
+  <div class="panel"><h3>Hibanapló és állásidők</h3><div class="tablewrap"><table><thead><tr><th>Kezdet</th><th>Esemény</th><th class="r">Időtartam</th><th>Ok</th><th>Rögzítette</th><th>Munkalap</th></tr></thead><tbody>
+  ${log.map(l => `<tr><td class="num">${fmtDT(l.t0)}</td><td>${l.state === 3 ? `<b>${l.code}</b> ${esc(TEXTLISTS.hibakod[l.code] || '')}` : STATES[l.state][0]}</td><td class="r num">${l.t1 ? l.dur + ' perc' : l.dur + ' perc, tart'}</td><td>${l.ok ? esc(l.ok) : '<span style="color:var(--stop)">Okra vár</span>'}${l.megj ? `<div class="muted" style="font-size:13px">${esc(l.megj)}</div>` : ''}</td><td>${esc(l.user || '–')}</td><td>${l.ml ? `<a href="#" class="back" data-a="ml" data-v="${l.ml}">${l.ml}</a>` : '–'}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+function drawGepCharts(m) {
+  const h = m.hist.slice(-120), xs = h.map(p => p.t);
+  const downs = m.log.filter(l => l.t0 >= xs[0] - 10).map(l => ({ t0: l.t0, t1: l.t1 || S.now + 1, txt: l.state === 3 ? l.code + ' ' + (TEXTLISTS.hibakod[l.code] || '') : 'Állásidő' + (l.ok ? ': ' + l.ok : '') }));
+  lineChart(document.getElementById('c-perf'), { id: 'gp-' + m.id, label: 'Gyártási teljesítmény', xs, unit: 'db/óra', series: [{ name: 'tényleges', vals: rolling(h.map(p => p.perf), 5), dec: 0, area: true }], ref: { v: m.elvart, name: 'Elvárt' }, bands: downs, bandAt: t => downs.find(d => t >= d.t0 && t < d.t1)?.txt });
+  lineChart(document.getElementById('c-amp'), { id: 'ga-' + m.id, label: 'Áramfelvétel', xs, unit: 'A', h: 180, series: [{ name: 'áramfelvétel', vals: h.map(p => p.amp), dec: 1 }] });
+}
+
+/* --- Munkalapok --- */
+function viewMunkalapok() {
+  const cnt = k => k === 'mind' ? ML.length : ML.filter(x => x.status === k).length;
+  const q = S.mlSearch.trim().toLowerCase();
+  const order = { futo: 0, pending: 1, lezart: 2, megszakitott: 3 };
+  const rows = ML.filter(x => (S.mlFilter === 'mind' || x.status === S.mlFilter) && (!q || (x.id + ' ' + x.termek + ' ' + x.cikkszam + ' ' + x.tipus).toLowerCase().includes(q)))
+    .sort((a, b) => order[a.status] - order[b.status] || ((b.end?.t || b.importalva) - (a.end?.t || a.importalva)));
+  return `<div class="head"><div><h1>Munkalapok</h1><div class="sub">A munkalapok importból érkeznek; a típusuk alapján a szabályok rendelik őket a gépekhez.</div></div>
+    <button class="btn primary" data-a="import">Import (JSON)</button></div>
+  <div class="filters" role="group" aria-label="Szűrés állapotra">
+    ${['mind', 'futo', 'pending', 'lezart', 'megszakitott'].map(k => `<button class="chip" data-a="filt" data-v="${k}" aria-pressed="${S.mlFilter === k}">${k === 'mind' ? 'Mind' : ML_ST[k]} · ${cnt(k)}</button>`).join('')}
+    <input class="search" id="mlsearch" type="search" placeholder="Keresés: munkalapszám, termék, cikkszám" value="${esc(S.mlSearch)}" aria-label="Keresés">
+  </div>
+  <div class="panel" style="padding:6px 8px"><div class="tablewrap"><table>
+    <thead><tr><th>Munkalap</th><th>Állapot</th><th>Típus</th><th>Termék</th><th class="r">Kész / terv</th><th>Gép</th><th>Határidő</th><th>Lezárva</th><th>Forrás</th></tr></thead>
+    <tbody>${rows.map(x => `<tr class="click" data-a="ml" data-v="${x.id}"><td><b>${x.id}</b></td><td>${mlPill(x.status)}</td><td>${x.tipus}</td><td>${esc(x.termek)}<div class="muted mono" style="font-size:12px">${esc(x.cikkszam)}</div></td>
+      <td class="r num">${x.status === 'pending' ? '–' : nf(x.good)} / ${nf(x.terv)}</td><td>${x.gepId ? machine(x.gepId).nev.replace('Citizen L20 – ', 'L20 ') : '<span class="muted">' + x.gepek.map(g => machine(g).nev.replace('Citizen L20 – ', 'L20 ')).join(', ') + '</span>'}</td>
+      <td class="num">${x.hatarido}</td><td class="num">${x.end ? fmtDT(x.end.t) : '–'}</td><td class="muted">${x.forras}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">Nincs találat.</td></tr>'}</tbody>
+  </table></div></div>`;
+}
+function viewMl(ml) {
+  if (!ml) return '<p>Nincs ilyen munkalap.</p>';
+  const rule = RULES[ml.tipus];
+  const fields = `<dl class="kv"><dt>Típus</dt><dd>${ml.tipus}</dd><dt>Termék</dt><dd>${esc(ml.termek)}</dd><dt>Cikkszám</dt><dd class="mono">${esc(ml.cikkszam)}</dd><dt>Tervezett mennyiség</dt><dd class="num">${nf(ml.terv)} db</dd><dt>Határidő</dt><dd>${ml.hatarido}</dd>
+    ${Object.entries(ml.extra).map(([k, v]) => `<dt>${esc(FIELD_LBL[k] || (k.charAt(0).toUpperCase() + k.slice(1)))}</dt><dd>${esc(v)}</dd>`).join('')}
+    <dt>Forrás</dt><dd>${ml.forras} · ${fmtDT(ml.importalva)}</dd>
+    <dt>Szabály</dt><dd>${ml.tipus} → ${rule.gepek.map(g => machine(g).nev).join(', ')}<div class="muted" style="font-size:13px">kezdő űrlap: ${FORMS[rule.kezdo].nev} · befejező: ${FORMS[rule.bef].nev}</div></dd></dl>`;
+  const head = `<a href="#" class="back" data-a="go" data-v="munkalapok">← Munkalapok</a>
+    <div class="head"><div><div class="eyebrow">${ml.status === 'lezart' || ml.status === 'megszakitott' ? 'Munkalap-riport' : 'Munkalap'}</div><h1>${ml.id}</h1><div class="sub">${esc(ml.termek)} · ${esc(ml.cikkszam)}${ml.gepId ? ' · ' + machine(ml.gepId).nev : ''}</div></div>
+    <div class="row">${mlPill(ml.status)}${ml.status === 'lezart' || ml.status === 'megszakitott' ? '<button class="btn" data-a="csv">Export CSV</button>' : ''}</div></div>`;
+  if (ml.status === 'pending') return head + `<div class="grid2"><div class="panel"><h3>Adatok</h3>${fields}</div>
+    <div class="panel"><h3>Hol jelenik meg</h3><p>A szabály szerint ennek a gépnek a pending listáján: <b>${rule.gepek.map(g => machine(g).nev).join(', ')}</b>.</p><p class="muted">Indítani a gép melletti terminálon lehet. Indításkor a munkalap véglegesen ahhoz a géphez kötődik.</p>
+    <button class="btn accent" data-a="toterm" data-v="${rule.gepek[0]}">Megnyitás a gépterminálon</button></div></div>`;
+  const st = mlStats(ml), m = machine(ml.gepId);
+  const pctE = st.perfRun / st.elvart * 100;
+  const timeline = `<dl class="kv"><dt>Indítás</dt><dd>${fmtDT(ml.start.t)} · ${esc(ml.start.user)}</dd>${ml.end ? `<dt>${ml.status === 'megszakitott' ? 'Megszakítás' : 'Lezárás'}</dt><dd>${fmtDT(ml.end.t)} · ${esc(ml.end.user)}</dd>` : '<dt>Állapot</dt><dd>fut</dd>'}<dt>Futásidő</dt><dd>${fmtDur(st.perc)}</dd></dl>`;
+  const kpis = `<div class="kpis">
+    <div class="kpi"><span class="l">Jó / selejt</span><span class="v">${nf(ml.good)} <small>/ ${nf(ml.reject)} db</small></span><span class="d">terv: ${nf(ml.terv)} db · selejtarány ${nf(st.selejt, 1)}%</span></div>
+    <div class="kpi"><span class="l">Teljesítmény üzemidőben</span><span class="v">${nf(st.perfRun, 1)} <small>db/óra</small></span><span class="d">${nf(pctE)}% az elvárt ${st.elvart}-hez</span></div>
+    <div class="kpi"><span class="l">Teljesítmény teljes futásidőre</span><span class="v">${nf(st.perfAll, 1)} <small>db/óra</small></span><span class="d">állásidőkkel együtt</span></div>
+    <div class="kpi"><span class="l">Állásidő</span><span class="v">${st.down} <small>perc</small></span><span class="d">${ml.downtimes.length} esemény · ${ml.shortStops} rövid megállás a korlát alatt</span></div>
+    <div class="kpi"><span class="l">Fogyasztás</span><span class="v">${nf(st.energy, 1)} <small>kWh</small></span><span class="d">${nf(st.kwhDb * 1000, 0)} Wh/db · átlag ${nf(st.avgKw, 1)} kW</span></div>
+  </div>`;
+  const downs = `<div class="tablewrap"><table><thead><tr><th>Kezdet</th><th>Esemény</th><th class="r">Időtartam</th><th>Ok</th><th>Rögzítette</th></tr></thead><tbody>
+    ${ml.downtimes.map(d => `<tr><td class="num">${fmtT(d.t0)}</td><td>${d.state === 3 ? `<b>${d.code}</b> ${esc(TEXTLISTS.hibakod[d.code] || '')}` : STATES[d.state][0]}</td><td class="r num">${d.dur} perc</td><td>${d.ok ? esc(d.ok) : '<span style="color:var(--stop)">Okra vár</span>'}${d.megj ? `<div class="muted" style="font-size:13px">${esc(d.megj)}</div>` : ''}</td><td>${esc(d.user || '–')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nem volt állásidő.</td></tr>'}
+    </tbody></table></div>`;
+  const urlap = (lbl, list) => `<h3 style="margin-top:6px">${lbl}</h3>${list.length ? list.map(a => a.out ? `<div class="flag" style="margin-bottom:8px"><div class="row" style="justify-content:space-between"><b>${esc(a.s)} (${nf(a.min, 2)}–${nf(a.max, 2)})</b><b>${nf(a.val, 2)} · tartományon kívül</b></div><div style="margin-top:4px">Indoklás: „${esc(a.indok)}”</div></div>`
+    : `<div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><span>${esc(a.s)}</span><b class="num">${a.t === 'num' ? nf(a.val, 2) : esc(a.val)}</b></div>`).join('') : '<p class="muted">Nincs kitöltve.</p>'}`;
+  return head + (ml.status === 'megszakitott' ? `<div class="flag"><b>Megszakítva</b> ${fmtDT(ml.end.t)} · ${esc(ml.end.user)} — „${esc(ml.megszakitas)}”</div>` : '') + kpis + `
+  <div class="panel"><h3>Gyártási teljesítmény az elvárthoz képest</h3><div class="chart" id="r-perf"></div>
+    <div class="legend"><span><i></i>Tényleges (${st.perc > 120 ? '15' : '5'} perces átlag)</span><span><i class="dash"></i>Elvárt (${m.elvart} db/óra)</span><span><i class="band"></i>Állásidő</span></div>
+    <div style="margin-top:14px">${stateBand(ml.series)}</div></div>
+  <div class="grid2">
+    <div class="panel"><h3>Fogyasztás (halmozott)</h3><div class="chart" id="r-en"></div></div>
+    <div class="panel"><h3>Állásidők és hibák</h3>${downs}</div>
+  </div>
+  <div class="grid2"><div class="panel"><h3>Adatok és idővonal</h3>${timeline}<hr style="border:0;border-top:1px solid var(--line);margin:12px 0">${fields}</div>
+  <div class="panel">${urlap('Kezdő űrlap', ml.urlap.kezdo)}${ml.status !== 'futo' ? urlap('Befejező űrlap', ml.urlap.bef) : ''}</div></div>`;
+}
+function drawMlCharts(ml) {
+  if (!ml || ml.status === 'pending' || ml.series.length < 2) return;
+  const m = machine(ml.gepId), s = ml.series, size = s.length > 120 ? 15 : 5;
+  const b = bucket(s, size, ch => ch.reduce((a, p) => a + p.perf, 0) / ch.length);
+  const downs = ml.downtimes.map(d => ({ t0: d.t0, t1: d.t1 || S.now + 1, txt: (d.state === 3 ? d.code + ' ' + (TEXTLISTS.hibakod[d.code] || '') : STATES[d.state][0]) + (d.ok ? ' · ' + d.ok : '') }));
+  lineChart(document.getElementById('r-perf'), { id: 'rp-' + ml.id, label: 'Teljesítmény az elvárthoz', xs: b.map(x => x.t), unit: 'db/óra', series: [{ name: 'tényleges', vals: b.map(x => x.v), dec: 0, area: true }], ref: { v: m.elvart, name: 'Elvárt' }, bands: downs, bandAt: t => downs.find(d => t + size > d.t0 && t < d.t1)?.txt, xFmt: t => fmtT(t) + '–' + fmtT(t + size) });
+  let cum = 0; const e = s.map(p => (cum += p.kw / 60));
+  const step = Math.max(1, Math.floor(s.length / 160));
+  const xs = [], vs = []; s.forEach((p, i) => { if (i % step === 0 || i === s.length - 1) { xs.push(p.t); vs.push(e[i]); } });
+  lineChart(document.getElementById('r-en'), { id: 're-' + ml.id, label: 'Halmozott fogyasztás', xs, unit: 'kWh', h: 190, series: [{ name: 'fogyasztás', vals: vs, dec: 1 }] });
+}
+
+/* --- CSV export (a letöltést a megjelenítő tiltja, ezért másolható szöveg) --- */
+function csvFor(ml) {
+  const st = mlStats(ml), L = [];
+  L.push('munkalap;' + ml.id, 'termek;' + ml.termek, 'cikkszam;' + ml.cikkszam, 'gep;' + machine(ml.gepId).nev, 'allapot;' + ML_ST[ml.status], 'inditas;' + fmtDT(ml.start.t) + ';' + ml.start.user, 'lezaras;' + fmtDT(ml.end.t) + ';' + ml.end.user,
+    'jo_db;' + ml.good, 'selejt_db;' + ml.reject, 'teljesitmeny_uzemidoben_db_ora;' + nf(st.perfRun, 1), 'elvart_db_ora;' + st.elvart, 'allasido_perc;' + st.down, 'fogyasztas_kwh;' + nf(st.energy, 2), '');
+  L.push('ido;allapot;teljesitmeny_db_ora;aram_A;teljesitmeny_kW');
+  ml.series.forEach(p => L.push([fmtDT(p.t), STATES[p.state][0], nf(p.perf, 1), nf(p.amp, 2), nf(p.kw, 2)].join(';')));
+  return L.join('\n');
+}
+
+/* ====================== import ====================== */
+const SAMPLE = [
+  { munkalapszam: 'ML-2026-1050', tipus: 'Tű', termek: 'Injekciós tű 0,8 mm', cikkszam: 'TU-0825', mennyiseg: 1500, hatarido: '2026-10-14', megrendelo: 'Minta Medical Zrt.' },
+  { munkalapszam: 'ML-2026-1051', tipus: 'Bütyköstengely', termek: 'Bütyköstengely Ø12', cikkszam: 'BT-4410', mennyiseg: 300, hatarido: '2026-10-15', rajzszam: 'R-4410-C' },
+  { munkalapszam: 'ML-2026-1052', tipus: 'Tű', termek: 'Varrótű 1,2 mm', cikkszam: 'TU-1230', mennyiseg: 2000 },
+  { munkalapszam: 'ML-2026-1048', tipus: 'Tű', termek: 'Injekciós tű 0,8 mm', cikkszam: 'TU-0825', mennyiseg: 600, hatarido: '2026-10-12' },
+  { munkalapszam: 'ML-2026-1053', tipus: 'Csavar', termek: 'Hatlapfejű csavar M6', cikkszam: 'CS-0606', mennyiseg: 5000, hatarido: '2026-10-16' },
+];
+const FIELD_LBL = { megrendelo: 'Megrendelő', rajzszam: 'Rajzszám' };
+const REQ = ['munkalapszam', 'tipus', 'termek', 'cikkszam', 'mennyiseg', 'hatarido'];
+function checkImport(arr) {
+  if (!Array.isArray(arr)) arr = [arr];
+  return arr.map(o => {
+    const miss = REQ.filter(k => o[k] == null || o[k] === '');
+    let err = null;
+    if (miss.length) err = 'Hiányzó kötelező mező: ' + miss.join(', ');
+    else if (mlById(o.munkalapszam)) err = 'Már létezik — kihagyva';
+    else if (!RULES[o.tipus]) err = `Nincs szabály a(z) „${o.tipus}” típushoz`;
+    else if (!(Number(o.mennyiseg) > 0)) err = 'A mennyiség nem pozitív szám';
+    return { o, err };
+  });
+}
+function openImport() {
+  const rows = S.importRows;
+  modal(`<div class="scrim" data-a="close-bg"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="imp-t">
+    <h2 id="imp-t">Munkalapok importálása (JSON)</h2>
+    <p class="muted" style="margin:0">A fájl munkalapok tömbje, mezői az egységes munkalap-definíció szerint: <span class="mono">munkalapszam, tipus, termek, cikkszam, mennyiseg, hatarido</span> + tetszőleges további mezők.</p>
+    <div class="row"><label class="btn" for="impfile" style="cursor:pointer">Fájl kiválasztása…</label><input id="impfile" type="file" accept=".json,application/json" hidden>
+      <button class="btn" data-a="sample">Mintafájl betöltése</button></div>
+    ${rows ? `<div class="tablewrap"><table><thead><tr><th>Munkalap</th><th>Típus</th><th>Termék</th><th class="r">Mennyiség</th><th>Ellenőrzés</th></tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${esc(r.o.munkalapszam || '–')}</td><td>${esc(r.o.tipus || '–')}</td><td>${esc(r.o.termek || '–')}</td><td class="r num">${r.o.mennyiseg != null ? nf(r.o.mennyiseg) : '–'}</td>
+      <td>${r.err ? `<span style="color:var(--err)">${esc(r.err)}</span>` : `<span style="color:var(--ok)">Rendben</span> → ${RULES[r.o.tipus].gepek.map(g => machine(g).nev).join(', ')}`}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p style="margin:0">${rows.filter(r => !r.err).length} munkalap importálható, ${rows.filter(r => r.err).length} kihagyva.</p>` : '<p class="muted" style="margin:0">Válassz egy JSON-fájlt, vagy töltsd be a mintafájlt.</p>'}
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Mégse</button><button class="btn primary" data-a="doimport" ${rows && rows.some(r => !r.err) ? '' : 'disabled'}>Importálás</button></div>
+  </div></div>`);
+  const f = document.getElementById('impfile');
+  f && f.addEventListener('change', () => { const file = f.files[0]; if (!file) return; const rd = new FileReader(); rd.onload = () => { try { S.importRows = checkImport(JSON.parse(rd.result)); } catch (e) { S.importRows = [{ o: {}, err: 'A fájl nem érvényes JSON: ' + e.message }]; } openImport(); }; rd.readAsText(file); });
+}
+function doImport() {
+  const ok = S.importRows.filter(r => !r.err);
+  ok.forEach(({ o }) => { const extra = {}; Object.keys(o).forEach(k => { if (!REQ.includes(k)) extra[k] = o[k]; });
+    mkMl({ id: o.munkalapszam, tipus: o.tipus, termek: o.termek, cikkszam: o.cikkszam, terv: Number(o.mennyiseg), hatarido: o.hatarido, status: 'pending', gepek: RULES[o.tipus].gepek, importalva: S.now, extra }); });
+  S.importRows = null; closeModal(); S.mlFilter = 'pending'; render(); toast(ok.length + ' munkalap importálva');
+}
+
+/* ====================== gépterminál ====================== */
+function renderTerminal() {
+  return `<div class="termwrap"><div class="termctl"><span>Melyik gép termináljaként?</span>
+    <select id="termgep" aria-label="Terminál gépe">${M.map(m => `<option value="${m.id}" ${S.term.gepId === m.id ? 'selected' : ''}>${m.nev}</option>`).join('')}</select>
+    <span class="muted">A terminál a gép mellett, érintőpanelen fut.</span></div>
+    <div class="term">${termBody()}</div>
+    ${S.term.user ? `<div class="termctl"><span>Demó-vezérlés:</span><button class="demo-btn" data-a="simstop">Leállás szimulálása (6 perc)</button><button class="demo-btn" data-a="simerr">Hiba szimulálása (E-3107, 5 perc)</button></div>` : ''}</div>`;
+}
+function termBody() {
+  const m = machine(S.term.gepId), u = USERS.find(x => x.id === S.term.user);
+  if (!u) return `<div id="termbody" style="display:flex;flex-direction:column;flex:1"><div class="th"><span class="brand" style="font-size:18px">Visubase</span><h2>${m.nev}</h2>${stPill(m.state)}</div>
+    <div class="tb"><div class="tpanel" style="max-width:760px;width:100%;align-self:center;display:flex;flex-direction:column;gap:16px">
+      <h2 style="font-size:26px">Bejelentkezés</h2><p class="muted" style="margin:0">Válaszd ki magad, majd add meg a jelszót. Később RFID-kártyával.</p>
+      <div class="users">${USERS.map(x => `<button class="user" data-a="pickuser" data-v="${x.id}" aria-pressed="${S.term.pick === x.id}"><b>${x.nev}</b><span>${x.szerep}</span></button>`).join('')}</div>
+      <label for="pw" class="muted">Jelszó</label><input id="pw" class="tinput" type="password" value="demo1234" autocomplete="off">
+      <button class="tbtn go" data-a="login">Belépés</button></div></div></div>`;
+  const ml = m.run && mlById(m.run), pend = ML.filter(x => x.status === 'pending' && x.gepek.includes(m.id)).sort((a, b) => a.hatarido.localeCompare(b.hatarido));
+  const p = curPerf(m), last = m.hist.at(-1);
+  const waiting = m.log.find(l => l.ml && l.ml === m.run && !l.ok);
+  return `<div id="termbody" style="display:flex;flex-direction:column;flex:1"><div class="th"><span class="brand" style="font-size:18px">Visubase</span><h2>${m.nev}</h2>${stPill(m.state)}<span style="flex:1"></span>
+    <div style="text-align:right"><b>${u.nev}</b><div class="muted" style="font-size:13px">${u.szerep}</div></div><button class="tbtn" style="min-height:44px;font-size:15px" data-a="logout">Kijelentkezés</button></div>
+  <div class="tb">
+    ${waiting ? `<div class="alert"><b>${waiting.state === 3 ? 'Hiba: ' + waiting.code + ' ' + (TEXTLISTS.hibakod[waiting.code] || '') : 'Állásidő'}</b><span>${fmtT(waiting.t0)} óta · ${waiting.dur} perc. Add meg az okát.</span><span style="flex:1"></span><button class="tbtn go" data-a="reason">Ok megadása</button></div>` : ''}
+    ${ml ? `<div class="tpanel" style="display:flex;flex-direction:column;gap:14px">
+        <div class="row"><span class="eyebrow">Futó munkalap</span><span class="muted">indítva ${fmtT(ml.start.t)} · ${esc(ml.start.user)}</span></div>
+        <div class="row" style="justify-content:space-between;align-items:flex-end"><div><div style="font-family:var(--f-display);font-size:34px;font-weight:700">${ml.id}</div><div style="font-size:18px;color:var(--t-ink-2)">${esc(ml.termek)} · ${esc(ml.cikkszam)}</div></div><div class="muted">határidő: ${ml.hatarido}</div></div>
+        <div class="row" style="justify-content:space-between;align-items:baseline"><div style="font-family:var(--f-display);font-size:42px;font-weight:700" class="num">${nf(ml.good)} <span style="font-size:20px;color:var(--t-ink-3)">/ ${nf(ml.terv)} db</span></div><div style="color:var(--t-ink-2)">jó ${nf(ml.good)} · selejt ${nf(ml.reject)}</div></div>
+        <div class="progress"><div style="width:${Math.min(100, ml.good / ml.terv * 100).toFixed(1)}%"></div></div>
+        <div class="row"><button class="tbtn go" style="flex:1" data-a="close-ml">Gyártás lezárása</button><button class="tbtn warn" data-a="abort">Megszakítás…</button></div></div>` : ''}
+    <div class="tkpis">
+      <div class="tkpi"><div class="l">Gyártási teljesítmény</div><div class="v">${nf(p)} <small>db/óra</small></div><div class="l">elvárt: ${m.elvart} db/óra</div></div>
+      <div class="tkpi"><div class="l">Áramfelvétel</div><div class="v">${nf(last.amp, 1)} <small>A</small></div><div class="l">${nf(last.kw, 1)} kW</div></div>
+      <div class="tkpi"><div class="l">Fogyasztás ${ml ? 'a munkalapon' : 'ma'}</div><div class="v">${nf(ml ? ml.energy : m.energyToday, 1)} <small>kWh</small></div><div class="l">${ml ? 'indítás óta' : '00:00 óta'}</div></div>
+      <div class="tkpi"><div class="l">Állásidő a munkalapon</div><div class="v">${ml ? ml.downtimes.reduce((a, d) => a + d.dur, 0) : 0} <small>perc</small></div><div class="l">korlát: ${m.korlat * 60} s</div></div>
+    </div>
+    <div class="tpanel"><div class="eyebrow" style="color:var(--t-ink-2)">Pending munkalapok · ${pend.length}</div>
+      ${pend.map(x => `<div class="trow"><b style="width:150px">${x.id}</b><span class="grow">${esc(x.termek)} · ${esc(x.cikkszam)}</span><span style="width:100px" class="num">${nf(x.terv)} db</span><span style="width:120px" class="muted">hat.: ${x.hatarido}</span>
+        <button class="tbtn ${ml ? '' : 'go'}" data-a="start" data-v="${x.id}" ${ml ? 'disabled' : ''}>Indítás</button></div>`).join('') || '<p class="muted">Nincs pending munkalap ehhez a géphez. Az irodában importálhatsz újat.</p>'}
+      ${ml && pend.length ? '<p class="muted" style="margin:8px 0 0">Egy gépen egyszerre egy munkalap futhat — lezárás után indítható a következő.</p>' : ''}
+    </div>
+  </div></div>`;
+}
+function afterTerminal() {
+  const sel = document.getElementById('termgep');
+  if (sel && !sel.dataset.b) { sel.dataset.b = 1; sel.addEventListener('change', () => { S.term.gepId = sel.value; S.term.user = null; render(); }); }
+}
+
+/* űrlap-varázsló */
+function startWizard(ml, kind) { S.wiz = { ml: ml.id, kind, form: RULES[ml.tipus][kind === 'kezdo' ? 'kezdo' : 'bef'], i: 0, answers: [], sel: null, err: '' }; drawWizard(); }
+function drawWizard() {
+  const w = S.wiz, f = FORMS[w.form], q = f.q[w.i], n = f.q.length;
+  let input = '';
+  if (q.t === 'bool') input = `<div class="opts">${['Igen', 'Nem'].map(v => `<button class="opt" data-a="wsel" data-v="${v}" aria-pressed="${w.sel === v}">${v}</button>`).join('')}</div>`;
+  else if (q.t === 'list') input = `<div class="opts">${TEXTLISTS[q.l].map(v => `<button class="opt" data-a="wsel" data-v="${esc(v)}" aria-pressed="${w.sel === v}">${esc(v)}</button>`).join('')}</div>`;
+  else if (q.t === 'num') {
+    const v = w.sel != null ? parseNum(w.sel) : null, out = v != null && (v < q.min || v > q.max);
+    input = `<div class="muted">Elfogadott tartomány: ${nf(q.min, 2)} – ${nf(q.max, 2)}</div><label for="wnum" class="muted">Mért érték</label><input id="wnum" class="tinput" inputmode="decimal" value="${esc(w.sel ?? '')}" style="max-width:280px;font-family:var(--f-display);font-size:30px;font-weight:700">
+      ${out ? `<div class="alert"><span>A mért érték kívül esik a tartományon. Továbbléphetsz, de <b>indoklás kötelező</b> — a riportban kiemelve jelenik meg.</span></div><label for="windok" class="muted">Indoklás</label><textarea id="windok">${esc(w.indok || '')}</textarea>` : ''}`;
+  } else input = `<label for="wtxt" class="muted">Válasz</label><textarea id="wtxt">${esc(w.sel ?? '')}</textarea>`;
+  modal(`<div class="scrim"><div class="tmodal" role="dialog" aria-modal="true" aria-labelledby="wq">
+    <div class="row"><span class="eyebrow">${f.nev} · ${w.i + 1}. kérdés / ${n}</span><div class="steps">${f.q.map((_, k) => `<i class="${k <= w.i ? 'on' : ''}"></i>`).join('')}</div></div>
+    <h2 id="wq">${esc(q.s)}</h2>${input}
+    ${w.err ? `<div class="alert err">${esc(w.err)}</div>` : ''}
+    <div class="row"><button class="tbtn" data-a="wback">${w.i ? 'Vissza' : 'Mégse'}</button><button class="tbtn go" style="flex:1" data-a="wnext">${w.i === n - 1 ? (w.kind === 'kezdo' ? 'Kész, indítás' : 'Kész, lezárás') : 'Tovább'}</button></div>
+  </div></div>`);
+  const num = document.getElementById('wnum');
+  const first = document.querySelector('#modal input, #modal textarea'); if (first && q.t !== 'bool' && q.t !== 'list') { first.focus(); const L = first.value.length; first.setSelectionRange?.(L, L); }
+}
+function wizNext() {
+  const w = S.wiz, f = FORMS[w.form], q = f.q[w.i];
+  const num = document.getElementById('wnum'), txt = document.getElementById('wtxt'), ind = document.getElementById('windok');
+  if (num) w.sel = num.value; if (txt) w.sel = txt.value; if (ind) w.indok = ind.value;
+  let a;
+  if (q.t === 'num') {
+    const v = parseNum(w.sel); if (v == null) { w.err = 'Adj meg egy számot.'; return drawWizard(); }
+    const out = v < q.min || v > q.max;
+    if (out && !ind) { return drawWizard(); }
+    if (out && !(w.indok || '').trim()) { w.err = 'Tartományon kívüli értéknél az indoklás kötelező.'; return drawWizard(); }
+    a = { s: q.s, t: 'num', min: q.min, max: q.max, val: v, out, indok: out ? w.indok.trim() : '' };
+  } else {
+    if (!w.sel || !String(w.sel).trim()) { w.err = 'Minden kérdés kötelező — válaszolj a továbblépéshez.'; return drawWizard(); }
+    a = { s: q.s, t: q.t, val: String(w.sel).trim() };
+  }
+  w.answers[w.i] = a; w.err = '';
+  if (w.i < f.q.length - 1) { w.i++; const prev = w.answers[w.i]; w.sel = prev ? (prev.t === 'num' ? nf(prev.val, 2) : prev.val) : null; w.indok = prev?.indok || ''; return drawWizard(); }
+  finishWizard();
+}
+function finishWizard() {
+  const w = S.wiz, ml = mlById(w.ml), m = machine(S.term.gepId), u = USERS.find(x => x.id === S.term.user);
+  if (w.kind === 'kezdo') {
+    ml.urlap.kezdo = w.answers; ml.status = 'futo'; ml.gepId = m.id; ml.start = { t: S.now, user: u.nev }; m.run = ml.id; m.state = 2;
+    closeModal(); render(); toast(ml.id + ' elindítva');
+  } else {
+    if (m.cur) { m.cur.t1 = S.now; if (m.cur.dur < m.korlat) ml.shortStops++; m.cur = null; }
+    ml.urlap.bef = w.answers; ml.status = 'lezart'; ml.end = { t: S.now, user: u.nev }; m.run = null; m.override = null; m.state = 1;
+    S.wiz = null;
+    modal(`<div class="scrim"><div class="tmodal" role="dialog" aria-modal="true"><span class="eyebrow">Lezárva</span><h2>${ml.id} lezárva, a riport elkészült</h2>
+      <p style="margin:0;color:var(--t-ink-2)">${nf(ml.good)} jó és ${nf(ml.reject)} selejt darab. A riport az irodai felületen, a Munkalapok között nézhető meg.</p>
+      <div class="row"><button class="tbtn" data-a="close">Bezárás</button><button class="tbtn go" style="flex:1" data-a="toreport" data-v="${ml.id}">Riport megnyitása az irodában</button></div></div></div>`);
+    render();
+  }
+  S.wiz = null;
+}
+function openReason() {
+  const r = S.reasonFor; if (!r) return;
+  const rec = r.rec; S.reasonSel = S.reasonSel || null;
+  modal(`<div class="scrim"><div class="tmodal" role="dialog" aria-modal="true" aria-labelledby="rq">
+    <span class="eyebrow">${rec.state === 3 ? 'Hiba' : 'Állásidő'} · ${fmtT(rec.t0)} óta</span>
+    <h2 id="rq">${rec.state === 3 ? esc(rec.code + ' ' + (TEXTLISTS.hibakod[rec.code] || '')) : 'A gép áll — mi az oka?'}</h2>
+    <p style="margin:0;color:var(--t-ink-2)">A leállás meghaladta a gép állásidő-korlátját (${machine(r.m).korlat * 60} s). Válaszd ki az okot.</p>
+    <div class="opts">${TEXTLISTS.allas.map(v => `<button class="opt" data-a="rsel" data-v="${esc(v)}" aria-pressed="${S.reasonSel === v}">${esc(v)}</button>`).join('')}</div>
+    <label for="rmegj" style="color:var(--t-ink-3)">Megjegyzés (nem kötelező)</label><textarea id="rmegj">${esc(S.reasonMegj || '')}</textarea>
+    <div class="row"><button class="tbtn" data-a="close">Később</button><button class="tbtn go" style="flex:1" data-a="rsave" ${S.reasonSel ? '' : 'disabled'}>Rögzítés</button></div></div></div>`);
+}
+function openAbort() {
+  modal(`<div class="scrim"><div class="tmodal" role="dialog" aria-modal="true" aria-labelledby="aq"><span class="eyebrow">Megszakítás</span><h2 id="aq">Biztosan megszakítod a munkalapot?</h2>
+    <p style="margin:0;color:var(--t-ink-2)">A megszakított munkalap nem folytatható. Az indoklás kötelező.</p>
+    <label for="aind" style="color:var(--t-ink-3)">Indoklás</label><textarea id="aind"></textarea><div id="aerr"></div>
+    <div class="row"><button class="tbtn" data-a="close">Mégse</button><button class="tbtn warn" style="flex:1" data-a="doabort">Megszakítás</button></div></div></div>`);
+  document.getElementById('aind').focus();
+}
+
+/* ====================== modál, toast ====================== */
+const modalEl = document.getElementById('modal');
+function modal(html) { modalEl.innerHTML = html; }
+function closeModal() { modalEl.innerHTML = ''; }
+let toastT; function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+
+/* ====================== események ====================== */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-a]'); if (!el) return;
+  const a = el.dataset.a, v = el.dataset.v;
+  if (a === 'close-bg') { if (e.target === el) { closeModal(); S.importRows = null; } return; }
+  if (el.tagName === 'A') e.preventDefault();
+  const term = machine(S.term.gepId);
+  switch (a) {
+    case 'mode': S.mode = v; S.hover = null; render(); break;
+    case 'pause': S.running = !S.running; render(); break;
+    case 'go': S.view = v; S.sel = null; S.hover = null; render(); window.scrollTo(0, 0); break;
+    case 'gep': S.view = 'gep'; S.sel = v; S.hover = null; render(); window.scrollTo(0, 0); break;
+    case 'ml': S.view = 'ml'; S.sel = v; S.hover = null; render(); window.scrollTo(0, 0); break;
+    case 'filt': S.mlFilter = v; render(); break;
+    case 'import': S.importRows = null; openImport(); break;
+    case 'sample': S.importRows = checkImport(SAMPLE); openImport(); break;
+    case 'doimport': doImport(); break;
+    case 'close': closeModal(); S.importRows = null; S.wiz = null; break;
+    case 'csv': { const ml = mlById(S.sel); modal(`<div class="scrim" data-a="close-bg"><div class="modal" role="dialog" aria-modal="true"><h2>Export CSV – ${ml.id}</h2><p class="muted" style="margin:0">Pontosvesszővel tagolt, percenkénti adatsor az összesítővel. A demóban a letöltés helyett innen másolható.</p><textarea id="csvtxt" readonly style="min-height:260px;font-family:var(--f-mono);font-size:12px">${esc(csvFor(ml))}</textarea><div class="row" style="justify-content:flex-end"><button class="btn" data-a="close">Bezárás</button><button class="btn primary" data-a="copycsv">Másolás</button></div></div></div>`); break; }
+    case 'copycsv': { const ta = document.getElementById('csvtxt'); navigator.clipboard?.writeText(ta.value).then(() => toast('CSV a vágólapon'), () => { ta.select(); toast('Jelöld ki és másold: Ctrl+C'); }) || (ta.select()); break; }
+    case 'toterm': S.mode = 'terminal'; S.term.gepId = v; render(); window.scrollTo(0, 0); break;
+    case 'toreport': closeModal(); S.mode = 'iroda'; S.view = 'ml'; S.sel = v; render(); window.scrollTo(0, 0); break;
+    case 'pickuser': S.term.pick = v; render(); break;
+    case 'login': S.term.user = S.term.pick; render(); toast('Bejelentkezve: ' + USERS.find(x => x.id === S.term.user).nev); break;
+    case 'logout': S.term.user = null; render(); break;
+    case 'start': startWizard(mlById(v), 'kezdo'); break;
+    case 'close-ml': startWizard(mlById(term.run), 'bef'); break;
+    case 'abort': openAbort(); break;
+    case 'doabort': { const t = document.getElementById('aind').value.trim(); if (!t) { document.getElementById('aerr').innerHTML = '<div class="alert err">Az indoklás kötelező.</div>'; return; }
+      const ml = mlById(term.run); if (term.cur) { term.cur.t1 = S.now; term.cur = null; } ml.status = 'megszakitott'; ml.megszakitas = t; ml.end = { t: S.now, user: USERS.find(x => x.id === S.term.user).nev }; term.run = null; term.override = null; term.state = 1; closeModal(); render(); toast(ml.id + ' megszakítva'); break; }
+    case 'wsel': S.wiz.sel = v; S.wiz.err = ''; drawWizard(); break;
+    case 'wnext': wizNext(); break;
+    case 'wback': if (S.wiz.i === 0) { S.wiz = null; closeModal(); } else { S.wiz.i--; const p = S.wiz.answers[S.wiz.i]; S.wiz.sel = p ? (p.t === 'num' ? nf(p.val, 2) : p.val) : null; S.wiz.indok = p?.indok || ''; S.wiz.err = ''; drawWizard(); } break;
+    case 'simstop': if (!term.run) { toast('Előbb indíts egy munkalapot'); break; } term.override = { state: 5, until: S.now + 6 }; toast('A gép leállt (szimuláció)'); break;
+    case 'simerr': if (!term.run) { toast('Előbb indíts egy munkalapot'); break; } term.override = { state: 3, until: S.now + 5, code: 'E-3107' }; toast('Hiba: E-3107 (szimuláció)'); break;
+    case 'reason': { const rec = term.log.find(l => l.ml === term.run && !l.ok); if (rec) { S.reasonFor = { m: term.id, rec }; S.reasonSel = null; S.reasonMegj = ''; openReason(); } break; }
+    case 'rsel': S.reasonMegj = document.getElementById('rmegj')?.value || ''; S.reasonSel = v; openReason(); break;
+    case 'rsave': { const r = S.reasonFor; r.rec.ok = S.reasonSel; r.rec.megj = (document.getElementById('rmegj')?.value || '').trim(); r.rec.user = USERS.find(x => x.id === S.term.user)?.nev || '–'; S.reasonFor = null; S.reasonSel = null; S.reasonMegj = ''; closeModal(); render(); toast('Ok rögzítve'); break; }
+  }
+});
+document.addEventListener('input', e => { if (e.target.id === 'mlsearch') { S.mlSearch = e.target.value; const pos = e.target.selectionStart; document.getElementById('main').innerHTML = renderMain(); const s = document.getElementById('mlsearch'); s.focus(); s.setSelectionRange(pos, pos); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalEl.innerHTML) { closeModal(); S.importRows = null; S.wiz = null; } if (e.key === 'Enter' && e.target.id === 'wnum') { e.preventDefault(); wizNext(); } });
+let rT; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { if (S.mode === 'iroda') afterMain(); }, 150); });
+
+render();
+</script>
+</body></html>
